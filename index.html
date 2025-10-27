@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ESP32 NAT Router Config</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h2>⚙️ ESP32 NAT Router Config</h2>
+
+    <!-- AP Settings Section -->
+    <div class="card">
+      <h3>AP Settings (New Network)</h3>
+      <form id="apForm">
+        <label for="apSsid">SSID</label>
+        <input type="text" id="apSsid" placeholder="Enter AP SSID" />
+
+        <label for="apPassword">Password</label>
+        <input type="password" id="apPassword" placeholder="Enter password (min 8 chars)" />
+
+        <button type="submit" class="btn">Set</button>
+        <p class="note">Password less than 8 chars = open</p>
+      </form>
+    </div>
+
+    <!-- STA Settings Section -->
+    <div class="card">
+      <h3>STA Settings (Uplink WiFi Network)</h3>
+      <form id="staForm">
+        <label for="staSsid">SSID</label>
+        <input type="text" id="staSsid" placeholder="Existing WiFi SSID" />
+
+        <label for="staPassword">Password</label>
+        <input type="password" id="staPassword" placeholder="Existing WiFi Password" />
+
+        <label for="enterpriseUsername">Enterprise Username (optional)</label>
+        <input type="text" id="enterpriseUsername" placeholder="WPA2 Enterprise username" />
+
+        <label for="enterpriseIdentity">Enterprise Identity (optional)</label>
+        <input type="text" id="enterpriseIdentity" placeholder="WPA2 Enterprise identity" />
+
+        <button type="submit" class="btn">Connect</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
