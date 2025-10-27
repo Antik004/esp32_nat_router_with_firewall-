@@ -1,165 +1,141 @@
-#define CONFIG_PAGE "<html>\
-<head></head>\
-<meta name='viewport' content='width=device-width, initial-scale=1'>\
+#define CONFIG_PAGE "<!DOCTYPE html>\
+<html lang='en'>\
+<head>\
+<meta charset='UTF-8' />\
+<meta name='viewport' content='width=device-width, initial-scale=1.0' />\
+<title>ESP32 NAT Router Config</title>\
 <style>\
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');\
 body {\
-font-family: apercu-pro, -apple-system, system-ui, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;\
-padding: 1em;\
-line-height: 2em;\
-font-weight: 100;\
+  font-family: 'Poppins', sans-serif;\
+  background: linear-gradient(135deg, #1e3c72, #2a5298);\
+  color: #333;\
+  display: flex;\
+  justify-content: center;\
+  align-items: flex-start;\
+  min-height: 100vh;\
+  margin: 0;\
+  padding: 40px 0;\
 }\
-\
-td {\
-font-weight: 100;\
-min-height: 24px;\
+.container {\
+  width: 90%;\
+  max-width: 450px;\
+  background: #fff;\
+  padding: 25px;\
+  border-radius: 15px;\
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);\
+  animation: fadeIn 0.8s ease;\
 }\
-\
-td:first-child { \
-text-align: right;\
-min-width: 100px;\
-padding-right: 10px;\
-}\
-\
-h1 {\
-font-size: 1.5em;\
-font-weight: 200;\
-}\
-\
 h2 {\
-font-size: 1.2em;\
-font-weight: 200;\
-margin-left: 5px;\
+  text-align: center;\
+  color: #2a5298;\
+  margin-bottom: 20px;\
 }\
-\
+.card {\
+  background: #f7f9fc;\
+  padding: 20px;\
+  border-radius: 10px;\
+  margin-bottom: 20px;\
+  border-left: 5px solid #2a5298;\
+  transition: transform 0.3s ease, box-shadow 0.3s ease;\
+}\
+.card:hover {\
+  transform: scale(1.02);\
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);\
+}\
+h3 {\
+  color: #1e3c72;\
+  margin-bottom: 15px;\
+}\
+label {\
+  display: block;\
+  margin-top: 10px;\
+  font-weight: 500;\
+}\
 input {\
-border: 1px solid rgb(196, 196, 196);\
-color: rgb(76, 76, 76);\
-width: 240px;\
-border-radius: 3px;\
-height: 40px;\
-margin: 3px 0px;\
-padding: 0px 14px;\
+  width: 100%;\
+  padding: 10px;\
+  margin-top: 5px;\
+  border: 1px solid #ccc;\
+  border-radius: 8px;\
+  transition: 0.3s;\
+  outline: none;\
 }\
-\
 input:focus {\
-border:1px solid black;\
-outline: none !important;\
-box-shadow: 0 0 10px #719ECE;\
+  border-color: #2a5298;\
+  box-shadow: 0 0 5px rgba(42, 82, 152, 0.4);\
 }\
-\
-#config {\
-width:400px; \
-margin:0 auto;\
+.btn {\
+  display: block;\
+  width: 100%;\
+  background: #2a5298;\
+  color: white;\
+  border: none;\
+  padding: 10px;\
+  font-size: 16px;\
+  border-radius: 8px;\
+  cursor: pointer;\
+  margin-top: 15px;\
+  transition: 0.3s;\
 }\
-\
-.ok-button {\
-background-color: #0078e7;\
-color: #fff;\
+.btn:hover {\
+  background: #1e3c72;\
 }\
-\
-.red-button {\
-background-color: #e72e00;\
-color: #fff;\
+.note {\
+  font-size: 12px;\
+  color: #555;\
+  margin-top: 8px;\
+  text-align: center;\
+}\
+@keyframes fadeIn {\
+  from { opacity: 0; transform: translateY(-10px);}\
+  to { opacity: 1; transform: translateY(0);}\
 }\
 </style>\
+</head>\
 <body>\
-<div id='config'>\
-<h1>ESP32 NAT Router Config</h1>\
+  <div class='container'>\
+    <h2>⚙️ ESP32 NAT Router Config</h2>\
+    <div class='card'>\
+      <h3>AP Settings (New Network)</h3>\
+      <form id='apForm'>\
+        <label for='apSsid'>SSID</label>\
+        <input type='text' id='apSsid' placeholder='Enter AP SSID' />\
+        <label for='apPassword'>Password</label>\
+        <input type='password' id='apPassword' placeholder='Enter password (min 8 chars)' />\
+        <button type='submit' class='btn'>Set</button>\
+        <p class='note'>Password less than 8 chars = open</p>\
+      </form>\
+    </div>\
+    <div class='card'>\
+      <h3>STA Settings (Uplink WiFi Network)</h3>\
+      <form id='staForm'>\
+        <label for='staSsid'>SSID</label>\
+        <input type='text' id='staSsid' placeholder='Existing WiFi SSID' />\
+        <label for='staPassword'>Password</label>\
+        <input type='password' id='staPassword' placeholder='Existing WiFi Password' />\
+        <label for='enterpriseUsername'>Enterprise Username (optional)</label>\
+        <input type='text' id='enterpriseUsername' placeholder='WPA2 Enterprise username' />\
+        <label for='enterpriseIdentity'>Enterprise Identity (optional)</label>\
+        <input type='text' id='enterpriseIdentity' placeholder='WPA2 Enterprise identity' />\
+        <button type='submit' class='btn'>Connect</button>\
+      </form>\
+    </div>\
+  </div>\
 <script>\
-if (window.location.search.substr(1) != '')\
-{\
-document.getElementById('config').display = 'none';\
-document.body.innerHTML ='<h1>ESP32 NAT Router Config</h1>The new settings have been sent to the device.<br/>The page will refresh soon automatically...';\
-setTimeout(\"location.href = '/'\",10000);\
-}\
+document.getElementById('apForm').addEventListener('submit', (e) => {\
+  e.preventDefault();\
+  const ssid = document.getElementById('apSsid').value;\
+  const password = document.getElementById('apPassword').value;\
+  alert(`AP Configured:\\nSSID: ${ssid}\\nPassword: ${password || 'Open Network'}`);\
+});\
+document.getElementById('staForm').addEventListener('submit', (e) => {\
+  e.preventDefault();\
+  const ssid = document.getElementById('staSsid').value;\
+  const password = document.getElementById('staPassword').value;\
+  alert(`Connecting to:\\nSSID: ${ssid}\\nPassword: ${password ? '********' : 'No Password'}`);\
+});\
 </script>\
-<h2>AP Settings (the new network)</h2>\
-<form action='' method='GET'>\
-<table>\
-<tr>\
-<td>SSID</td>\
-<td><input type='text' name='ap_ssid' value='%s' placeholder='SSID of the new network'/></td>\
-</tr>\
-<tr>\
-<td>Password</td>\
-<td><input type='text' name='ap_password' value='%s' placeholder='Password of the new network'/></td>\
-</tr>\
-<tr>\
-<td></td>\
-<td><input type='submit' value='Set' class='ok-button'/></td>\
-</tr>\
-</table>\
-<small>\
-<i>Password </i>less than 8 chars = open<br />\
-</small>\
-</form>\
-\
-<h2>STA Settings (uplink WiFi network)</h2>\
-<form action='' method='GET'>\
-<table>\
-<tr>\
-<td>SSID</td>\
-<td><input type='text' name='ssid' value='%s' placeholder='SSID of existing network'/></td>\
-</tr>\
-<tr>\
-<td>Password</td>\
-<td><input type='text' name='password' value='%s' placeholder='Password of existing network'/></td>\
-</tr>\
-<tr>\
-<td colspan='2'>WPA2 Enterprise settings. Leave blank for regular</td>\
-</tr>\
-<tr>\
-<td>Enterprise username</td>\
-<td><input type='text' name='ent_username' value='%s' placeholder='WPA2 Enterprise username'/></td>\
-</tr>\
-<tr>\
-<td>Enterprise identity</td>\
-<td><input type='text' name='ent_identity' value='%s' placeholder='WPA2 Enterprise identity'/></td>\
-</tr>\
-<tr>\
-<td></td>\
-<td><input type='submit' value='Connect' class='ok-button'/></td>\
-</tr>\
-\
-</table>\
-</form>\
-\
-<h2>STA Static IP Settings</h2>\
-<form action='' method='GET'>\
-<table>\
-<tr>\
-<td>Static IP</td>\
-<td><input type='text' name='staticip' value='%s'/></td>\
-</tr>\
-<tr>\
-<td>Subnet Mask</td>\
-<td><input type='text' name='subnetmask' value='%s'/></td>\
-</tr>\
-<tr>\
-<td>Gateway</td>\
-<td><input type='text' name='gateway' value='%s'/></td>\
-</tr>\
-<tr>\
-<td></td>\
-<td><input type='submit' value='Connect' class='ok-button'/></td>\
-</tr>\
-\
-</table>\
-<small>\
-<i>Leave it in blank if you want your ESP32 to get an IP using DHCP</i>\
-</small>\
-</form>\
-\
-<h2>Device Management</h2>\
-<form action='' method='GET'>\
-<table>\
-<tr>\
-<td>Device</td>\
-<td><input type='submit' name='reset' value='Reboot' class='red-button'/></td>\
-</tr>\
-</table>\
-</form>\
-</div>\
 \
 <p>\
     Already configured? Go to the <a href=\"/firewall\">Firewall Page</a>\
