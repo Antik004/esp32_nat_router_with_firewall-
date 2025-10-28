@@ -1,0 +1,36 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center; }
+      .button { background-color: #4CAF50; border: none; color: white; padding: 16px 40px; text-decoration: none; font-size: 20px; margin: 2px; cursor: pointer; }
+      .button2 { background-color: #555555; }
+      input[type=text] { padding: 12px; font-size: 18px; margin: 10px; }
+    </style>
+  </head>
+  <body>
+    <h2>ESP32 Firewall Control Panel</h2>
+    <form action="/add_ip" method="POST">
+      <label>Domain/IP:</label>
+      <input type="text" name="ipfield" placeholder="Enter domain or IP">
+      <button class="button" type="submit">Add IP</button>
+    </form>
+    <form action="/remove_ip" method="POST">
+      <label>Domain/IP:</label>
+      <input type="text" name="ipfield" placeholder="Enter domain or IP">
+      <button class="button button2" type="submit">Remove IP</button>
+    </form>
+    <form action="/inspect_packet" method="GET">
+      <button class="button" type="submit">Inspect Packet</button>
+    </form>
+    <hr>
+    <!-- Optional: List current allowed/blocked domains/IPs -->
+    <div>
+      <h4>Current Firewall Rules:</h4>
+      <ul>
+        <!-- Dynamically insert list of IPs/Domains here -->
+      </ul>
+    </div>
+  </body>
+</html>
