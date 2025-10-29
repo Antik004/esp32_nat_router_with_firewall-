@@ -292,3 +292,48 @@ table {margin-top:1em;}\
 </form>\
 </body>\
 </html>"
+
+#define DASHBOARD_PAGE "<html>\
+<head>\
+<meta name='viewport' content='width=device-width, initial-scale=1'>\
+<title>ESP32 Live Dashboard</title>\
+<style>\
+body { font-family: Arial, sans-serif; padding: 1em; background: #f4f4f9; }\
+h1 { text-align: center; color: #333; }\
+.card { background: white; padding: 1em; margin: 1em auto; border-radius: 10px; max-width: 600px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }\
+table { width: 100%; border-collapse: collapse; }\
+th, td { border-bottom: 1px solid #ccc; padding: 8px; text-align: left; }\
+.refresh { text-align: center; margin-top: 10px; color: #777; font-size: 0.9em; }\
+</style>\
+<script>\
+function fetchData() {\
+  fetch('/api/dashboard')\
+    .then(response => response.json())\
+    .then(data => {\
+      document.getElementById('clients').innerHTML = data.clients.join('<br>');\
+      document.getElementById('blocked').innerHTML = data.blocked.join('<br>');\
+      document.getElementById('traffic').innerHTML = data.traffic.join('<br>');\
+      document.getElementById('lastUpdate').innerText = new Date().toLocaleTimeString();\
+    });\
+}\
+setInterval(fetchData, 3000);\
+window.onload = fetchData;\
+</script>\
+</head>\
+<body>\
+<h1>ESP32 Live Dashboard</h1>\
+<div class='card'>\
+  <h2>Connected Clients</h2>\
+  <div id='clients'>Loading...</div>\
+</div>\
+<div class='card'>\
+  <h2>Recently Blocked Domains</h2>\
+  <div id='blocked'>Loading...</div>\
+</div>\
+<div class='card'>\
+  <h2>Recent Traffic Logs</h2>\
+  <div id='traffic'>Loading...</div>\
+</div>\
+<p class='refresh'>Last updated at: <span id='lastUpdate'>--:--:--</span></p>\
+</body>\
+</html>"

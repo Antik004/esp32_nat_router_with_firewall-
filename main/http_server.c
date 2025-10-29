@@ -218,6 +218,20 @@ char* html_escape(const char* src) {
     return res;
 }
 
+
+esp_err_t dashboard_api_handler(httpd_req_t *req)
+{
+    const char *json_response =
+        "{ \"clients\": [\"192.168.4.2\", \"192.168.4.3\"],"
+        "  \"blocked\": [\"ads.example.com\", \"tracker.net\"],"
+        "  \"traffic\": [\"192.168.4.2 → 8.8.8.8\", \"192.168.4.3 → openai.com\"] }";
+
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_send(req, json_response, HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
+
 httpd_handle_t start_webserver(void)
 {
     httpd_handle_t server = NULL;
@@ -242,6 +256,7 @@ httpd_handle_t start_webserver(void)
         strlen(safe_ent_identity) +
         256;
     char* config_page = malloc(sizeof(char) * page_len);
+        
 
     snprintf(
         config_page, page_len, config_page_template,
@@ -256,7 +271,14 @@ httpd_handle_t start_webserver(void)
     free(safe_passwd);
     free(safe_ent_username);
     free(safe_ent_identity);
+httpd_uri_t dashboard_api = {
+        .uri = "/api/dashboard",
+        .method = HTTP_GET,
+        .handler = dashboard_api_handler,
+        .user_ctx = NULL
+    };
 
+    
     esp_timer_create(&restart_timer_args, &restart_timer);
 
     // Start the httpd server
@@ -265,7 +287,8 @@ httpd_handle_t start_webserver(void)
         // Set URI handlers
         ESP_LOGI(TAG, "Registering URI handlers");
         httpd_register_uri_handler(server, &indexp);
-        httpd_register_uri_handler(server, &firewall_uri); //registered firewall uri 
+        httpd_register_uri_handler(server, &firewall_uri); 
+        httpd_register_uri_handler(server, &dashboard_api);//registered firewall uri 
         return server;
     }
 
@@ -278,3 +301,4 @@ static void stop_webserver(httpd_handle_t server)
     // Stop the httpd server
     httpd_stop(server);
 }
+
