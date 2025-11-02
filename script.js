@@ -1,17 +1,29 @@
-// Handle AP Form Submission
+// Handle AP Form
 document.getElementById("apForm").addEventListener("submit", (e) => {
   e.preventDefault();
   const ssid = document.getElementById("apSsid").value;
-  const password = document.getElementById("apPassword").value;
-
-  alert(`AP Configured:\nSSID: ${ssid}\nPassword: ${password || "Open Network"}`);
+  alert(`✅ AP Configured: ${ssid}`);
 });
 
-// Handle STA Form Submission
+// Handle STA Form
 document.getElementById("staForm").addEventListener("submit", (e) => {
   e.preventDefault();
   const ssid = document.getElementById("staSsid").value;
-  const password = document.getElementById("staPassword").value;
+  alert(`📡 Connecting to: ${ssid}`);
+});
 
-  alert(`Connecting to:\nSSID: ${ssid}\nPassword: ${password ? "********" : "No Password"}`);
+// 🍔 Dropdown
+const menuToggle = document.getElementById("menu-toggle");
+const dropdownMenu = document.getElementById("dropdown-menu");
+
+menuToggle.addEventListener("click", () => {
+  menuToggle.classList.toggle("active");
+  dropdownMenu.classList.toggle("active");
+});
+
+window.addEventListener("click", (e) => {
+  if (!menuToggle.contains(e.target) && !dropdownMenu.contains(e.target)) {
+    menuToggle.classList.remove("active");
+    dropdownMenu.classList.remove("active");
+  }
 });
