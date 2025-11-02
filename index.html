@@ -3,46 +3,71 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ESP32 NAT Router Config</title>
+  <title>ESP32 NAT Router Control Panel</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="container">
-    <h2>⚙️ ESP32 NAT Router Config</h2>
-
-    <!-- AP Settings Section -->
-    <div class="card">
-      <h3>AP Settings (New Network)</h3>
-      <form id="apForm">
-        <label for="apSsid">SSID</label>
-        <input type="text" id="apSsid" placeholder="Enter AP SSID" />
-
-        <label for="apPassword">Password</label>
-        <input type="password" id="apPassword" placeholder="Enter password (min 8 chars)" />
-
-        <button type="submit" class="btn">Set</button>
-        <p class="note">Password less than 8 chars = open</p>
-      </form>
+  <!-- 🌐 Navigation Bar -->
+  <nav class="navbar">
+    <div class="nav-left">
+      <h1>ESP32 NAT Router</h1>
     </div>
 
-    <!-- STA Settings Section -->
-    <div class="card">
-      <h3>STA Settings (Uplink WiFi Network)</h3>
-      <form id="staForm">
-        <label for="staSsid">SSID</label>
-        <input type="text" id="staSsid" placeholder="Existing WiFi SSID" />
+    <!-- 🍔 Hamburger -->
+    <div class="menu-toggle" id="menu-toggle">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
 
-        <label for="staPassword">Password</label>
-        <input type="password" id="staPassword" placeholder="Existing WiFi Password" />
+    <!-- Dropdown -->
+    <div class="dropdown-menu" id="dropdown-menu">
+      <a href="#" class="active">Config Page</a>
+      <a href="#">Firewall</a>
+      <a href="#">Live Dashboard</a>
+      <a href="#" class="signout">Sign Out</a>
+    </div>
+  </nav>
 
-        <label for="enterpriseUsername">Enterprise Username (optional)</label>
-        <input type="text" id="enterpriseUsername" placeholder="WPA2 Enterprise username" />
+  <!-- ⚙️ Main Container -->
+  <div class="main-container">
+    <div class="container">
+      <h2>⚙️ Configuration Panel</h2>
 
-        <label for="enterpriseIdentity">Enterprise Identity (optional)</label>
-        <input type="text" id="enterpriseIdentity" placeholder="WPA2 Enterprise identity" />
+      <!-- AP Settings -->
+      <div class="card glass-card">
+        <h3>AP Settings (New Network)</h3>
+        <form id="apForm">
+          <label for="apSsid">SSID</label>
+          <input type="text" id="apSsid" placeholder="Enter AP SSID" />
 
-        <button type="submit" class="btn">Connect</button>
-      </form>
+          <label for="apPassword">Password</label>
+          <input type="password" id="apPassword" placeholder="Enter password (min 8 chars)" />
+
+          <button type="submit" class="btn">Set</button>
+          <p class="note">Password less than 8 chars = open</p>
+        </form>
+      </div>
+
+      <!-- STA Settings -->
+      <div class="card glass-card">
+        <h3>STA Settings (Uplink WiFi Network)</h3>
+        <form id="staForm">
+          <label for="staSsid">SSID</label>
+          <input type="text" id="staSsid" placeholder="Existing WiFi SSID" />
+
+          <label for="staPassword">Password</label>
+          <input type="password" id="staPassword" placeholder="Existing WiFi Password" />
+
+          <label for="enterpriseUsername">Enterprise Username (optional)</label>
+          <input type="text" id="enterpriseUsername" placeholder="WPA2 Enterprise username" />
+
+          <label for="enterpriseIdentity">Enterprise Identity (optional)</label>
+          <input type="text" id="enterpriseIdentity" placeholder="WPA2 Enterprise identity" />
+
+          <button type="submit" class="btn">Connect</button>
+        </form>
+      </div>
     </div>
   </div>
 
