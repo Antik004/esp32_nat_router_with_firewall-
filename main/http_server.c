@@ -23,6 +23,8 @@
 #include "pages.h"
 #include "router_globals.h"
 
+#include "log_buffer.h"
+
 static const char *TAG = "HTTPServer";
 
 esp_timer_handle_t restart_timer;
@@ -167,17 +169,86 @@ static esp_err_t firewall_get_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+static esp_err_t inspect_packet_handler(httpd_req_t *req)
+{
+    // Redirect the user to the dashboard page
+    httpd_resp_set_status(req, "302 Found");
+    httpd_resp_set_hdr(req, "Location", "/dashboard");
+    httpd_resp_send(req, NULL, 0);
+    return ESP_OK;
+}
 static httpd_uri_t firewall_uri = {
     .uri       = "/firewall",                                           //calling of the firewall page
     .method    = HTTP_GET,
     .handler   = firewall_get_handler,
 };
-
 static httpd_uri_t indexp = {
     .uri       = "/",
     .method    = HTTP_GET,
     .handler   = index_get_handler,
 };
+
+
+static httpd_uri_t inspect_packet_uri = {
+    .uri       = "/inspect_packet",
+    .method    = HTTP_GET,
+    .handler   = inspect_packet_handler,
+};
+
+
+
+
+
+
+
+
+static esp_err_t dashboard_get_handler(httpd_req_t *req)
+{
+    httpd_resp_send(req, DASHBOARD_PAGE, strlen(DASHBOARD_PAGE));
+    return ESP_OK;
+}
+
+static httpd_uri_t dashboard_uri = {
+    .uri       = "/dashboard",
+    .method    = HTTP_GET,
+    .handler   = dashboard_get_handler,
+};
+
+
+
+esp_err_t logs_data_handler(httpd_req_t *req)
+{
+    char line[LOG_LINE_MAX_LEN + 10];
+
+    for (int i = 0; i < LOG_BUFFER_SIZE; i++) {
+        int idx = (log_index + i) % LOG_BUFFER_SIZE;
+        if (strlen(log_buffer[idx]) > 0) {
+            snprintf(line, sizeof(line), "%s\n", log_buffer[idx]);
+            httpd_resp_sendstr_chunk(req, line);
+        }
+    }
+
+    httpd_resp_sendstr_chunk(req, NULL); // end of response
+    return ESP_OK;
+}
+
+httpd_uri_t logs_uri = {
+    .uri       = "/logs",
+    .method    = HTTP_GET,
+    .handler   = logs_data_handler,
+    .user_ctx  = NULL
+};
+
+
+
+
+
+
+
+
+
+
+
 
 esp_err_t http_404_error_handler(httpd_req_t *req, httpd_err_code_t err)
 {
@@ -266,6 +337,10 @@ httpd_handle_t start_webserver(void)
         ESP_LOGI(TAG, "Registering URI handlers");
         httpd_register_uri_handler(server, &indexp);
         httpd_register_uri_handler(server, &firewall_uri); //registered firewall uri 
+        httpd_register_uri_handler(server, &inspect_packet_uri);
+        httpd_register_uri_handler(server, &logs_uri);
+        httpd_register_uri_handler(server, &dashboard_uri);
+
         return server;
     }
 

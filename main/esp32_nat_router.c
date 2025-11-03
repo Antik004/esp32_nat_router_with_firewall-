@@ -47,14 +47,7 @@
 
 #include "router_globals.h"
 
-
-#include "firewall.h"
-
-
-err_t ap_netif_input(struct pbuf *p, struct netif *inp) {
-    return firewall_hook(NULL, p, inp);
-}
-
+#include "log_buffer.h"
 
 // On board LED
 #if defined(CONFIG_IDF_TARGET_ESP32S3)
@@ -95,7 +88,7 @@ esp_netif_t* wifiSTA;
 
 httpd_handle_t start_webserver(void);
 
-static const char *TAG = "ESP32 NAT router";
+static const char *TAG = "ESP32 Firewall";
 
 /* Console command history can be stored to and loaded from a file.
  * The easiest way to do this is to use FATFS filesystem on top of
@@ -208,6 +201,7 @@ esp_err_t add_portmap(u8_t proto, u16_t mport, u32_t daddr, u16_t dport) {
                 err = nvs_commit(nvs);
                 if (err == ESP_OK) {
                     ESP_LOGI(TAG, "New portmap table stored.");
+                    add_log_line("New portmap table stored");
                 }
             }
             nvs_close(nvs);
@@ -369,16 +363,19 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
     }
     else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED)
     {
-        ESP_LOGI(TAG,"disconnected - retry to connect to the AP");
+        ESP_LOGI(TAG,"disconnected - retrying to connect to the AP");
+        add_log_line("disconnected - retrying to connect to the AP"); 
         ap_connect = false;
         esp_wifi_connect();
-        ESP_LOGI(TAG, "retry to connect to the AP");
+        ESP_LOGI(TAG, "retrying to connect to the AP");
+        add_log_line("retrying to connect to the AP");
         xEventGroupClearBits(wifi_event_group, WIFI_CONNECTED_BIT);
     }
     else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
     {
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
         ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
+        add_log_line("got ip");
         ap_connect = true;
         my_ip = event->ip_info.ip.addr;
         delete_portmap_tab();
@@ -387,6 +384,8 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
         {
             esp_netif_set_dns_info(wifiAP, ESP_NETIF_DNS_MAIN, &dns);
             ESP_LOGI(TAG, "set dns to:" IPSTR, IP2STR(&(dns.ip.u_addr.ip4)));
+            add_log_line("DNS set");
+
         }
         xEventGroupSetBits(wifi_event_group, WIFI_CONNECTED_BIT);
     }
@@ -394,11 +393,13 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
     {
         connect_count++;
         ESP_LOGI(TAG,"%d. station connected", connect_count);
+        add_log_line("station connected | Current" + connect_count);
     }
     else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_AP_STADISCONNECTED)
     {
         connect_count--;
         ESP_LOGI(TAG,"station disconnected - %d remain", connect_count);
+        add_log_line("station disconnected | Current:-"+ connect_count);
     }
 }
 
@@ -482,11 +483,14 @@ void wifi_init(const uint8_t* mac, const char* ssid, const char* ent_username, c
         //Set passwprd
         if(strlen(ent_username) == 0) {
             ESP_LOGI(TAG, "STA regular connection");
+            add_log_line("STA regular connection");
             strlcpy((char*)wifi_config.sta.password, passwd, sizeof(wifi_config.sta.password));
         }
         ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config) );
         if(strlen(ent_username) != 0 && strlen(ent_identity) != 0) {
             ESP_LOGI(TAG, "STA enterprise connection");
+            add_log_line("STA enterprise connection");
+
             if(strlen(ent_username) != 0 && strlen(ent_identity) != 0) {
                 esp_eap_client_set_identity((uint8_t *)ent_identity, strlen(ent_identity)); //provide identity
             } else {
@@ -529,11 +533,15 @@ void wifi_init(const uint8_t* mac, const char* ssid, const char* ent_username, c
 
     if (strlen(ssid) > 0) {
         ESP_LOGI(TAG, "wifi_init_apsta finished.");
+        add_log_line("wifi_init_apsta finished.");
         ESP_LOGI(TAG, "connect to ap SSID: %s ", ssid);
+        add_log_line("connect to ap SSID %s",ssid);
     } else {
         ESP_LOGI(TAG, "wifi_init_ap with default finished.");      
     }
 }
+ 
+
 
 uint8_t* mac = NULL;
 char* ssid = NULL;
@@ -597,7 +605,7 @@ void app_main(void)
     get_config_param_blob("ap_mac", &ap_mac, 6);
     get_config_param_str("ap_ssid", &ap_ssid);
     if (ap_ssid == NULL) {
-        ap_ssid = param_set_default("ESP32_NAT_Router");
+        ap_ssid = param_set_default("ESP32_Firewall");
     }   
     get_config_param_str("ap_passwd", &ap_passwd);
     if (ap_passwd == NULL) {
@@ -617,7 +625,10 @@ void app_main(void)
     pthread_create(&t1, NULL, led_status_thread, NULL);
 
     ip_napt_enable(my_ap_ip, 1);
-    ESP_LOGI(TAG, "NAT is enabled");  
+    ESP_LOGI(TAG, "NAT is enabled");
+    add_log_line(TAG,"NAT is enabled");  
+
+
 
     char* lock = NULL;
     get_config_param_str("lock", &lock);
@@ -626,6 +637,7 @@ void app_main(void)
     }
     if (strcmp(lock, "0") ==0) {
         ESP_LOGI(TAG,"Starting config web server");
+        add_log_line("Starting config web sever");
         start_webserver();
     }
     free(lock);
@@ -644,7 +656,7 @@ void app_main(void)
     const char* prompt = LOG_COLOR_I "esp32> " LOG_RESET_COLOR;
 
     printf("\n"
-           "ESP32 NAT ROUTER\n"
+           "ESP32 NAT Firewall\n"
            "Type 'help' to get the list of commands.\n"
            "Use UP/DOWN arrows to navigate through command history.\n"
            "Press TAB when typing command name to auto-complete.\n");

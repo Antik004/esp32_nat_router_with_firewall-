@@ -10,7 +10,7 @@
             "includePath": [
                 "/home/arceus/.platformio/packages/framework-espidf/components/xtensa/include",
                 "/home/arceus/.platformio/packages/framework-espidf/components/xtensa/esp32/include",
-                "/home/arceus/Downloads/esp32_nat_router-master/.pio/build/esp32dev/config",
+                "/home/arceus/esp32_nat_router_with_firewall-/.pio/build/esp32dev/config",
                 "/home/arceus/.platformio/packages/framework-espidf/components/newlib/platform_include",
                 "/home/arceus/.platformio/packages/framework-espidf/components/freertos/FreeRTOS-Kernel/include",
                 "/home/arceus/.platformio/packages/framework-espidf/components/freertos/FreeRTOS-Kernel/portable/xtensa/include",
@@ -142,10 +142,10 @@
                 "/home/arceus/.platformio/packages/framework-espidf/components/perfmon/include",
                 "/home/arceus/.platformio/packages/framework-espidf/components/spiffs/include",
                 "/home/arceus/.platformio/packages/framework-espidf/components/wifi_provisioning/include",
-                "/home/arceus/Downloads/esp32_nat_router-master/main",
-                "/home/arceus/Downloads/esp32_nat_router-master/components/cmd_nvs",
-                "/home/arceus/Downloads/esp32_nat_router-master/components/cmd_router",
-                "/home/arceus/Downloads/esp32_nat_router-master/components/cmd_system",
+                "/home/arceus/esp32_nat_router_with_firewall-/main",
+                "/home/arceus/esp32_nat_router_with_firewall-/components/cmd_nvs",
+                "/home/arceus/esp32_nat_router_with_firewall-/components/cmd_router",
+                "/home/arceus/esp32_nat_router_with_firewall-/components/cmd_system",
                 ""
             ],
             "browse": {
@@ -153,7 +153,7 @@
                 "path": [
                     "/home/arceus/.platformio/packages/framework-espidf/components/xtensa/include",
                     "/home/arceus/.platformio/packages/framework-espidf/components/xtensa/esp32/include",
-                    "/home/arceus/Downloads/esp32_nat_router-master/.pio/build/esp32dev/config",
+                    "/home/arceus/esp32_nat_router_with_firewall-/.pio/build/esp32dev/config",
                     "/home/arceus/.platformio/packages/framework-espidf/components/newlib/platform_include",
                     "/home/arceus/.platformio/packages/framework-espidf/components/freertos/FreeRTOS-Kernel/include",
                     "/home/arceus/.platformio/packages/framework-espidf/components/freertos/FreeRTOS-Kernel/portable/xtensa/include",
@@ -285,10 +285,10 @@
                     "/home/arceus/.platformio/packages/framework-espidf/components/perfmon/include",
                     "/home/arceus/.platformio/packages/framework-espidf/components/spiffs/include",
                     "/home/arceus/.platformio/packages/framework-espidf/components/wifi_provisioning/include",
-                    "/home/arceus/Downloads/esp32_nat_router-master/main",
-                    "/home/arceus/Downloads/esp32_nat_router-master/components/cmd_nvs",
-                    "/home/arceus/Downloads/esp32_nat_router-master/components/cmd_router",
-                    "/home/arceus/Downloads/esp32_nat_router-master/components/cmd_system",
+                    "/home/arceus/esp32_nat_router_with_firewall-/main",
+                    "/home/arceus/esp32_nat_router_with_firewall-/components/cmd_nvs",
+                    "/home/arceus/esp32_nat_router_with_firewall-/components/cmd_router",
+                    "/home/arceus/esp32_nat_router_with_firewall-/components/cmd_system",
                     ""
                 ]
             },
