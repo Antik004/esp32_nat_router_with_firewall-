@@ -87,6 +87,39 @@ esp_netif_t* wifiAP;
 esp_netif_t* wifiSTA;
 
 httpd_handle_t start_webserver(void);
+void init_domain_filter(void);
+
+// ============= MAC FILTERING IMPLEMENTATION =============
+#define MAX_CONNECTED_DEVICES 8
+
+// Global variables (definitions, not declarations)
+device_t device_list[MAX_DEVICES];
+int device_count = 0;
+
+static uint8_t connected_macs[MAX_CONNECTED_DEVICES][6];
+static int connected_count = 0;
+
+bool mac_exists(uint8_t mac[6]) {
+    for(int i = 0; i < device_count; i++){
+        if(memcmp(device_list[i].mac, mac, 6) == 0) return true;
+    }
+    return false;
+}
+
+void add_device(uint8_t mac[6]){
+    if(device_count < MAX_DEVICES && !mac_exists(mac)){
+        memcpy(device_list[device_count].mac, mac, 6);
+        device_list[device_count].status = PENDING;
+        device_count++;
+    }
+}
+
+static void print_mac(const uint8_t* mac)
+{
+    printf("%02X:%02X:%02X:%02X:%02X:%02X",
+           mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+}
+// ============= END MAC FILTERING IMPLEMENTATION =============
 
 static const char *TAG = "ESP32 Firewall";
 
@@ -367,8 +400,6 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
         add_log_line("disconnected - retrying to connect to the AP"); 
         ap_connect = false;
         esp_wifi_connect();
-        ESP_LOGI(TAG, "retrying to connect to the AP");
-        add_log_line("retrying to connect to the AP");
         xEventGroupClearBits(wifi_event_group, WIFI_CONNECTED_BIT);
     }
     else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
@@ -385,21 +416,97 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
             esp_netif_set_dns_info(wifiAP, ESP_NETIF_DNS_MAIN, &dns);
             ESP_LOGI(TAG, "set dns to:" IPSTR, IP2STR(&(dns.ip.u_addr.ip4)));
             add_log_line("DNS set");
-
         }
         xEventGroupSetBits(wifi_event_group, WIFI_CONNECTED_BIT);
     }
     else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_AP_STACONNECTED)
     {
+        wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*) event_data;
+
+        // Check if device should be blocked
+        bool should_block = false;
+        for(int i = 0; i < device_count; i++) {
+            if(memcmp(device_list[i].mac, event->mac, 6) == 0) {
+                if(device_list[i].status == BLOCKED) {
+                    should_block = true;
+                    ESP_LOGI(TAG, "Blocked device attempting connection");
+                    add_log_line("Blocked device attempting connection");
+                }
+                break;
+            }
+        }
+
+        if(should_block) {
+            // Use the event's AID (Association ID) to disconnect
+            // In ESP-IDF 5.1.2, the event structure contains the AID
+            esp_err_t err = esp_wifi_deauth_sta(event->aid);
+            
+            char mac_str[18];
+            sprintf(mac_str, "%02X:%02X:%02X:%02X:%02X:%02X",
+                event->mac[0], event->mac[1], event->mac[2],
+                event->mac[3], event->mac[4], event->mac[5]);
+            
+            if(err == ESP_OK) {
+                ESP_LOGI(TAG, "Successfully blocked MAC: %s", mac_str);
+                add_log_line("Blocked MAC:");
+                add_log_line(mac_str);
+            } else {
+                ESP_LOGW(TAG, "Deauth error: %d", err);
+            }
+            return;
+        }
+
+        // Add to connected list
+        if (connected_count < MAX_CONNECTED_DEVICES) {
+            memcpy(connected_macs[connected_count], event->mac, 6);
+            connected_count++;
+        }
+
         connect_count++;
-        ESP_LOGI(TAG,"%d. station connected", connect_count);
-        add_log_line("station connected | Current" + connect_count);
+        ESP_LOGI(TAG, "%d. Station connected | Current: %d", connect_count, connected_count);
+        printf("Connected device MAC: ");
+        print_mac(event->mac);
+        printf("\n");
+        
+        // Add device to list if not exists
+        add_device(event->mac);
+        
+        char mac_str[18];
+        sprintf(mac_str, "%02X:%02X:%02X:%02X:%02X:%02X",
+            event->mac[0], event->mac[1], event->mac[2],
+            event->mac[3], event->mac[4], event->mac[5]);
+        add_log_line("Device connected");
+        add_log_line("MAC:");
+        add_log_line(mac_str);
     }
     else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_AP_STADISCONNECTED)
     {
+        wifi_event_ap_stadisconnected_t* event = (wifi_event_ap_stadisconnected_t*) event_data;
+
+        // Remove MAC from connected list
+        for (int i = 0; i < connected_count; i++) {
+            if (memcmp(connected_macs[i], event->mac, 6) == 0) {
+                for (int j = i; j < connected_count - 1; j++) {
+                    memcpy(connected_macs[j], connected_macs[j + 1], 6);
+                }
+                connected_count--;
+                break;
+            }
+        }
+
         connect_count--;
-        ESP_LOGI(TAG,"station disconnected - %d remain", connect_count);
-        add_log_line("station disconnected | Current:-"+ connect_count);
+        ESP_LOGI(TAG, "Station disconnected - %d remain", connected_count);
+        printf("Disconnected device MAC: ");
+        print_mac(event->mac);
+        printf("\n");
+        
+        char mac_str[18];
+        sprintf(mac_str, "%02X:%02X:%02X:%02X:%02X:%02X",
+            event->mac[0], event->mac[1], event->mac[2],
+            event->mac[3], event->mac[4], event->mac[5]);
+        add_log_line("Device disconnected");
+        add_log_line("MAC:");
+        add_log_line(mac_str);
     }
 }
 
@@ -618,6 +725,8 @@ void app_main(void)
 
     get_portmap_tab();
 
+    init_domain_filter();
+
     // Setup WIFI
     wifi_init(mac, ssid, ent_username, ent_identity, passwd, static_ip, subnet_mask, gateway_addr, ap_mac, ap_ssid, ap_passwd, ap_ip);
 
@@ -628,7 +737,8 @@ void app_main(void)
     ESP_LOGI(TAG, "NAT is enabled");
     add_log_line(TAG,"NAT is enabled");  
 
-
+    ESP_LOGI(TAG, "Starting DNS server for domain filtering");
+    start_dns_server();
 
     char* lock = NULL;
     get_config_param_str("lock", &lock);

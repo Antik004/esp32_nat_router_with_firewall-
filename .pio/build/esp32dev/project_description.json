@@ -1,7 +1,7 @@
 {
     "version":            "1",
     "project_name":       "esp32_nat_router",
-    "project_version":    "48f3b4a-dirty",
+    "project_version":    "b11cf20-dirty",
     "project_path":       "/home/arceus/esp32_nat_router_with_firewall-",
     "idf_path":           "/home/arceus/.platformio/packages/framework-espidf",
     "build_dir":          "/home/arceus/esp32_nat_router_with_firewall-/.pio/build/esp32dev",
@@ -850,7 +850,7 @@
             "managed_reqs": [],
             "managed_priv_reqs": [],
             "file": "/home/arceus/esp32_nat_router_with_firewall-/.pio/build/esp32dev/esp-idf/main/libmain.a",
-            "sources": [ "/home/arceus/esp32_nat_router_with_firewall-/main/esp32_nat_router.c", "/home/arceus/esp32_nat_router_with_firewall-/main/http_server.c", "/home/arceus/esp32_nat_router_with_firewall-/main/log_buffer.c" ],
+            "sources": [ "/home/arceus/esp32_nat_router_with_firewall-/main/esp32_nat_router.c", "/home/arceus/esp32_nat_router_with_firewall-/main/http_server.c", "/home/arceus/esp32_nat_router_with_firewall-/main/log_buffer.c", "/home/arceus/esp32_nat_router_with_firewall-/main/domain_filter.c", "/home/arceus/esp32_nat_router_with_firewall-/main/dns_server.c" ],
             "include_dirs": [ "." ]
         },
         "mbedtls": {
