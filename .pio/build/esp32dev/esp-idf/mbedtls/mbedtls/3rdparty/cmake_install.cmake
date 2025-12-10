@@ -34,8 +34,8 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("/home/arceus/Downloads/esp32_nat_router-master/.pio/build/esp32dev/esp-idf/mbedtls/mbedtls/3rdparty/everest/cmake_install.cmake")
-  include("/home/arceus/Downloads/esp32_nat_router-master/.pio/build/esp32dev/esp-idf/mbedtls/mbedtls/3rdparty/p256-m/cmake_install.cmake")
+  include("/home/arceus/esp32_nat_router_with_firewall-/.pio/build/esp32dev/esp-idf/mbedtls/mbedtls/3rdparty/everest/cmake_install.cmake")
+  include("/home/arceus/esp32_nat_router_with_firewall-/.pio/build/esp32dev/esp-idf/mbedtls/mbedtls/3rdparty/p256-m/cmake_install.cmake")
 
 endif()
 

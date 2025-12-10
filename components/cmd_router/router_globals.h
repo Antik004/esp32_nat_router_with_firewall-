@@ -44,6 +44,28 @@ void print_portmap_tab();
 esp_err_t add_portmap(uint8_t proto, uint16_t mport, uint32_t daddr, uint16_t dport);
 esp_err_t del_portmap(uint8_t proto, uint16_t mport);
 
+#define MAX_DEVICES 20
+
+typedef enum {
+    PENDING, 
+    ALLOWED, 
+    BLOCKED
+} mac_status_t;
+
+typedef struct {
+    uint8_t mac[6];
+    mac_status_t status;
+} device_t;
+
+extern device_t device_list[MAX_DEVICES];
+extern int device_count;
+
+void add_device(uint8_t mac[6]);
+bool mac_exists(uint8_t mac[6]);
+
+// DNS Server function
+void start_dns_server(void);
+
 #ifdef __cplusplus
 }
 #endif

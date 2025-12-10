@@ -3,4 +3,4 @@ source "/home/arceus/.platformio/packages/framework-espidf/components/esp_app_fo
 source "/home/arceus/.platformio/packages/framework-espidf/components/esp_rom/Kconfig.projbuild"
 source "/home/arceus/.platformio/packages/framework-espidf/components/esptool_py/Kconfig.projbuild"
 source "/home/arceus/.platformio/packages/framework-espidf/components/partition_table/Kconfig.projbuild"
-source "/home/arceus/Downloads/esp32_nat_router-master/main/Kconfig.projbuild"
+source "/home/arceus/esp32_nat_router_with_firewall-/main/Kconfig.projbuild"

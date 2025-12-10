@@ -1,6 +1,6 @@
-set(CMAKE_HOST_SYSTEM "Linux-6.12.38+kali-amd64")
+set(CMAKE_HOST_SYSTEM "Linux-6.12.25-amd64")
 set(CMAKE_HOST_SYSTEM_NAME "Linux")
-set(CMAKE_HOST_SYSTEM_VERSION "6.12.38+kali-amd64")
+set(CMAKE_HOST_SYSTEM_VERSION "6.12.25-amd64")
 set(CMAKE_HOST_SYSTEM_PROCESSOR "x86_64")
 
 include("/home/arceus/.platformio/packages/framework-espidf/tools/cmake/toolchain-esp32.cmake")

@@ -1,4 +1,4 @@
-# Install script for directory: /home/arceus/Downloads/esp32_nat_router-master/main
+# Install script for directory: /home/arceus/esp32_nat_router_with_firewall-/main
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

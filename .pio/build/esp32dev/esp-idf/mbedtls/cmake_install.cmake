@@ -34,6 +34,6 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/home/arceus/Downloads/esp32_nat_router-master/.pio/build/esp32dev/esp-idf/mbedtls/mbedtls/cmake_install.cmake")
+  include("/home/arceus/esp32_nat_router_with_firewall-/.pio/build/esp32dev/esp-idf/mbedtls/mbedtls/cmake_install.cmake")
 endif()
 
