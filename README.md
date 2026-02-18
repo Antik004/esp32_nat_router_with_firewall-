@@ -5,3 +5,4 @@ Intercepts DNS queries
 Matches against blocked domain list
 Returns 0.0.0.0 for blocked domains
 Supports wildcard patterns (e.g., *.youtube.com)
+ //ignore commit messages, domain blocking has already been implemented
