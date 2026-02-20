@@ -9,7 +9,7 @@ Supports wildcard patterns (e.g., *.youtube.com)
 
 
 
-Note:-The current version of the orignal code is also available with a firewall now, this version of mine works on an older espidf version and has an extra functionality of domain filtering
+Note:-The current version of the orignal code is also available with a firewall now, this version of mine has an extra functionality of domain filtering
 however this can be bypassed as of now if DoH(DNS over HTTPS) is used and the MAC filtering is also bypassable if the client uses MAC spoofing.
 
 
