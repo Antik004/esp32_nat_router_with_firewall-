@@ -14,3 +14,6 @@ however this can be bypassed as of now if DoH(DNS over HTTPS) is used and the MA
 
 
 This is a built for a test and project purpose, not meant for usage in practical scenario as of now as it has some critical vulnerabilities as stated later in the above note.
+
+
+Independent Dashboard:-This implementation of a firewall contains a simple web dashboard which can work idependently where the users/the hosts can see the live logs similar to those displayed on the serial monitor
