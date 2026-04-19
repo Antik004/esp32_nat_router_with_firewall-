@@ -8,8 +8,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');\
 body {\
   font-family: 'Poppins', sans-serif;\
-  background: linear-gradient(135deg, #1e3c72, #2a5298);\
-  color: #333;\
+  background: linear-gradient(135deg, #0c0c0cff, #5600a7ff);\
+  color: #ebe8e8ff;\
   display: flex;\
   justify-content: center;\
   align-items: flex-start;\
@@ -20,31 +20,31 @@ body {\
 .container {\
   width: 90%;\
   max-width: 480px;\
-  background: #fff;\
+  background: #080808ff;\
   padding: 25px;\
   border-radius: 15px;\
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);\
+  box-shadow: 0 8px 25px rgba(104, 98, 98, 0.2);\
   animation: fadeIn 0.8s ease;\
 }\
 h1 {\
   text-align: center;\
-  color: #2a5298;\
+  color: #6e03e7ff;\
   margin-bottom: 20px;\
 }\
 .card {\
-  background: #f7f9fc;\
+  background: #0d0d0eff;\
   padding: 20px;\
   border-radius: 10px;\
   margin-bottom: 20px;\
-  border-left: 5px solid #2a5298;\
+  border-left: 5px solid #9100e6ff;\
   transition: transform 0.3s ease, box-shadow 0.3s ease;\
 }\
 .card:hover {\
   transform: scale(1.02);\
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);\
+  box-shadow: 0 6px 15px rgba(253, 253, 253, 0.72);\
 }\
 h2 {\
-  color: #1e3c72;\
+  color: #501e72ff;\
   margin-bottom: 10px;\
   text-align: center;\
 }\
@@ -84,7 +84,7 @@ input:focus {\
 }\
 .note {\
   font-size: 12px;\
-  color: #555;\
+  color: #e4e0e0ff;\
   margin-top: 8px;\
   text-align: center;\
 }\
@@ -96,7 +96,7 @@ input:focus {\
 </head>\
 <body>\
 <div class='container'>\
-<h1>ESP32 NAT Router Config</h1>\
+<h1>ESP32 FIREWALL CONFIG</h1>\
 <script>\
 if (window.location.search.substr(1) != '') {\
   document.body.innerHTML = '<h1>ESP32 NAT Router Config</h1><p>The new settings have been sent to the device.<br/>The page will refresh soon automatically...</p>';\
@@ -259,10 +259,7 @@ setTimeout(\"location.href = '/'\",1000);\
 </body>\
 </html>\
 "
-// Replace DASHBOARD_PAGE in pages.h with this version (no emoji/special chars):
-
-#define DASHBOARD_PAGE "\
-<!DOCTYPE html>\
+#define DASHBOARD_PAGE "<!DOCTYPE html>\
 <html>\
 <head>\
   <meta charset=\"UTF-8\">\
@@ -272,13 +269,13 @@ setTimeout(\"location.href = '/'\",1000);\
     * { margin: 0; padding: 0; box-sizing: border-box; }\
     body { \
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; \
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); \
+      background: linear-gradient(135deg, #080808ff 0%, #51198aff 100%); \
       color: #c9d1d9; \
       padding: 20px; \
       min-height: 100vh; \
     }\
     .container { \
-      max-width: 1200px; \
+      max-width: 1400px; \
       margin: 0 auto; \
     }\
     h1 { \
@@ -304,6 +301,16 @@ setTimeout(\"location.href = '/'\",1000);\
       border-bottom: 2px solid #58a6ff; \
       padding-bottom: 10px; \
     }\
+    .grid-2col {\
+      display: grid;\
+      grid-template-columns: 1fr 1fr;\
+      gap: 25px;\
+    }\
+    @media (max-width: 1024px) {\
+      .grid-2col {\
+        grid-template-columns: 1fr;\
+      }\
+    }\
     .stats { \
       display: flex; \
       gap: 15px; \
@@ -327,6 +334,79 @@ setTimeout(\"location.href = '/'\",1000);\
       color: #58a6ff; \
       font-size: 1.8em; \
       font-weight: bold; \
+    }\
+    .port-controls {\
+      display: grid;\
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));\
+      gap: 15px;\
+      margin-top: 15px;\
+    }\
+    .port-item {\
+      background: rgba(88, 166, 255, 0.05);\
+      padding: 15px;\
+      border-radius: 8px;\
+      display: flex;\
+      justify-content: space-between;\
+      align-items: center;\
+      border: 1px solid rgba(88, 166, 255, 0.2);\
+      transition: all 0.3s ease;\
+    }\
+    .port-item:hover {\
+      background: rgba(88, 166, 255, 0.1);\
+      border-color: rgba(88, 166, 255, 0.4);\
+    }\
+    .port-info {\
+      flex: 1;\
+    }\
+    .port-name {\
+      font-weight: bold;\
+      color: #58a6ff;\
+      font-size: 1.1em;\
+      display: block;\
+      margin-bottom: 3px;\
+    }\
+    .port-desc {\
+      font-size: 0.85em;\
+      color: #8b949e;\
+    }\
+    .switch {\
+      position: relative;\
+      display: inline-block;\
+      width: 50px;\
+      height: 26px;\
+    }\
+    .switch input {\
+      opacity: 0;\
+      width: 0;\
+      height: 0;\
+    }\
+    .slider {\
+      position: absolute;\
+      cursor: pointer;\
+      top: 0;\
+      left: 0;\
+      right: 0;\
+      bottom: 0;\
+      background-color: #da3633;\
+      transition: .4s;\
+      border-radius: 26px;\
+    }\
+    .slider:before {\
+      position: absolute;\
+      content: \"\";\
+      height: 18px;\
+      width: 18px;\
+      left: 4px;\
+      bottom: 4px;\
+      background-color: white;\
+      transition: .4s;\
+      border-radius: 50%;\
+    }\
+    input:checked + .slider {\
+      background-color: #238636;\
+    }\
+    input:checked + .slider:before {\
+      transform: translateX(24px);\
     }\
     pre { \
       background: #000; \
@@ -496,15 +576,26 @@ setTimeout(\"location.href = '/'\",1000);\
       color: #c9d1d9; \
       font-weight: 500; \
     }\
+    .info-box {\
+      background: rgba(88, 166, 255, 0.1);\
+      border-left: 4px solid #58a6ff;\
+      padding: 15px;\
+      border-radius: 6px;\
+      margin-bottom: 15px;\
+    }\
+    .info-box p {\
+      margin: 5px 0;\
+      line-height: 1.6;\
+    }\
   </style>\
 </head>\
 <body>\
   <div class=\"container\">\
     <a href=\"/\" class=\"back-btn\">&larr; Back to Config</a>\
-    <h1>ESP32 Firewall Dashboard</h1>\
+    <h1>🛡️ESP32 Firewall Dashboard</h1>\
     \
     <div class=\"card\">\
-      <h2>Statistics</h2>\
+      <h2>📊 Statistics</h2>\
       <div class=\"stats\">\
         <div class=\"stat-box\">\
           <div class=\"stat-label\">Total Devices</div>\
@@ -524,36 +615,50 @@ setTimeout(\"location.href = '/'\",1000);\
         </div>\
       </div>\
     </div>\
-    \
-    <div class=\"card\">\
-      <h2>Domain Blocking<span class=\"refresh-indicator\"></span></h2>\
-      <div class=\"add-domain-form\">\
-        <input type=\"text\" id=\"domainInput\" placeholder=\"Enter domain to block (e.g., youtube.com or *.facebook.com)\">\
-        <button class=\"btn\" onclick=\"addDomain()\">Add Domain</button>\
+\
+    <div class=\"grid-2col\">\
+      <div class=\"card\">\
+        <h2>🔒PENDING Device Port Access<span class=\"refresh-indicator\"></span></h2>\
+        <div class=\"info-box\">\
+          <p><strong>Rule:</strong> Devices in PENDING status can only access the ports enabled below.</p>\
+          <p><strong>Note:</strong> MAC 8C:1D:96:5F:7D:A5 has full access regardless of status.</p>\
+        </div>\
+        <div class=\"port-controls\" id=\"portControls\">\
+          <div class=\"empty-state\">Loading port rules...</div>\
+        </div>\
       </div>\
-      <div class=\"domain-list\" id=\"domainList\">\
-        <div class=\"empty-state\">No domains blocked yet</div>\
+\
+      <div class=\"card\">\
+        <h2>❌ Domain Blocking<span class=\"refresh-indicator\"></span></h2>\
+        <div class=\"add-domain-form\">\
+          <input type=\"text\" id=\"domainInput\" placeholder=\"Enter domain to block (e.g., youtube.com or *.facebook.com)\">\
+          <button class=\"btn\" onclick=\"addDomain()\">Add Domain</button>\
+        </div>\
+        <div class=\"domain-list\" id=\"domainList\">\
+          <div class=\"empty-state\">No domains blocked yet</div>\
+        </div>\
       </div>\
     </div>\
     \
     <div class=\"card\">\
-      <h2>Live Logs<span class=\"refresh-indicator\"></span></h2>\
+      <h2>🔴Live Logs<span class=\"refresh-indicator\"></span></h2>\
       <pre id=\"logBox\">Loading logs...</pre>\
     </div>\
     \
     <div class=\"card\">\
-      <h2>Connected Devices<span class=\"refresh-indicator\"></span></h2>\
+      <h2>💻 Connected Devices<span class=\"refresh-indicator\"></span></h2>\
       <table id=\"mac-table\">\
         <thead>\
           <tr>\
             <th>MAC Address</th>\
             <th>Status</th>\
+            <th>Access Level</th>\
             <th>Actions</th>\
           </tr>\
         </thead>\
         <tbody>\
           <tr>\
-            <td colspan=\"3\" class=\"empty-state\">Loading devices...</td>\
+            <td colspan=\"4\" class=\"empty-state\">Loading devices...</td>\
           </tr>\
         </tbody>\
       </table>\
@@ -561,6 +666,75 @@ setTimeout(\"location.href = '/'\",1000);\
   </div>\
   \
   <script>\
+    const PORT_INFO = {\
+      'tcp_443': { name: 'HTTPS', desc: 'TCP 443'},\
+      'tcp_80': { name: 'HTTP', desc: 'TCP 80'},\
+      'udp_53': { name: 'DNS', desc: 'UDP 53'},\
+      'tcp_22': { name: 'SSH', desc: 'TCP 22'},\
+      'tcp_21': { name: 'FTP', desc: 'TCP 21'},\
+      'tcp_25': { name: 'SMTP', desc: 'TCP 25'},\
+      'tcp_110': { name: 'POP3', desc: 'TCP 110'},\
+      'tcp_143': { name: 'IMAP', desc: 'TCP 143'},\
+      'tcp_3389': { name: 'RDP', desc: 'TCP 3389'},\
+      'udp_123': { name: 'NTP', desc: 'UDP 123'}\
+    };\
+\
+    async function fetchPortRules() {\
+      try {\
+        const resp = await fetch('/port_rules');\
+        const rules = await resp.json();\
+        const container = document.getElementById('portControls');\
+        container.innerHTML = '';\
+        \
+        for(const [port, enabled] of Object.entries(rules)) {\
+          if(PORT_INFO[port]) {\
+            const info = PORT_INFO[port];\
+            const div = document.createElement('div');\
+            div.className = 'port-item';\
+            \
+            const portInfo = document.createElement('div');\
+            portInfo.className = 'port-info';\
+            portInfo.innerHTML = `\
+              <span class=\"port-name\">${info.icon} ${info.name}</span>\
+              <span class=\"port-desc\">${info.desc}</span>\
+            `;\
+            \
+            const label = document.createElement('label');\
+            label.className = 'switch';\
+            label.innerHTML = `\
+              <input type=\"checkbox\" ${enabled ? 'checked' : ''} onchange=\"updatePortRule('${port}', this.checked)\">\
+              <span class=\"slider\"></span>\
+            `;\
+            \
+            div.appendChild(portInfo);\
+            div.appendChild(label);\
+            container.appendChild(div);\
+          }\
+        }\
+      } catch(e) {\
+        console.error('Error fetching port rules:', e);\
+      }\
+    }\
+\
+    async function updatePortRule(port, enabled) {\
+      try {\
+        const resp = await fetch('/update_port_rule', {\
+          method: 'POST',\
+          headers: { 'Content-Type': 'application/json' },\
+          body: JSON.stringify({ port: port, enabled: enabled })\
+        });\
+        \
+        if(resp.ok) {\
+          fetchLogs();\
+        } else {\
+          alert('Failed to update port rule');\
+        }\
+      } catch(e) {\
+        console.error('Error updating port rule:', e);\
+        alert('Error updating port rule');\
+      }\
+    }\
+\
     async function fetchLogs() {\
       try {\
         const res = await fetch('/logs');\
@@ -581,7 +755,7 @@ setTimeout(\"location.href = '/'\",1000);\
         tbody.innerHTML = '';\
         \
         if(devices.length === 0) {\
-          tbody.innerHTML = '<tr><td colspan=\"3\" class=\"empty-state\">No devices connected yet</td></tr>';\
+          tbody.innerHTML = '<tr><td colspan=\"4\" class=\"empty-state\">No devices connected yet</td></tr>';\
           updateStats(0, 0, 0, 0);\
           return;\
         }\
@@ -608,26 +782,42 @@ setTimeout(\"location.href = '/'\",1000);\
           else if(dev.status === 'BLOCKED') blocked++;\
           else if(dev.status === 'PENDING') pending++;\
           \
+          const accessTd = document.createElement('td');\
+          if(dev.mac === '8C:1D:96:5F:7D:A5') {\
+            accessTd.innerHTML = '<span style=\"color: #3fb950; font-weight: bold;\">OK Full Access</span>';\
+          } else if(dev.status === 'ALLOWED') {\
+            accessTd.innerHTML = '<span style=\"color: #3fb950;\">Full Internet</span>';\
+          } else if(dev.status === 'BLOCKED') {\
+            accessTd.innerHTML = '<span style=\"color: #f85149;\">No Access</span>';\
+          } else {\
+            accessTd.innerHTML = '<span style=\"color: #f0ad4e;\">Limited (Port Rules)</span>';\
+          }\
+          tr.appendChild(accessTd);\
+          \
           const actionTd = document.createElement('td');\
           \
-          if(dev.status !== 'ALLOWED'){\
-            const allowBtn = document.createElement('button');\
-            allowBtn.innerText = 'Allow';\
-            allowBtn.className = 'btn';\
-            allowBtn.onclick = () => updateMac(dev.mac, 'ALLOWED');\
-            actionTd.appendChild(allowBtn);\
-          }\
-          \
-          if(dev.status !== 'BLOCKED'){\
-            const blockBtn = document.createElement('button');\
-            blockBtn.innerText = 'Block';\
-            blockBtn.className = 'btn btn-block';\
-            blockBtn.onclick = () => {\
-              if(confirm('Block device ' + dev.mac + '?')){\
-                updateMac(dev.mac, 'BLOCKED');\
-              }\
-            };\
-            actionTd.appendChild(blockBtn);\
+          if(dev.mac !== '8C:1D:96:5F:7D:A5') {\
+            if(dev.status !== 'ALLOWED'){\
+              const allowBtn = document.createElement('button');\
+              allowBtn.innerText = 'Allow';\
+              allowBtn.className = 'btn';\
+              allowBtn.onclick = () => updateMac(dev.mac, 'ALLOWED');\
+              actionTd.appendChild(allowBtn);\
+            }\
+            \
+            if(dev.status !== 'BLOCKED'){\
+              const blockBtn = document.createElement('button');\
+              blockBtn.innerText = 'Block';\
+              blockBtn.className = 'btn btn-block';\
+              blockBtn.onclick = () => {\
+                if(confirm('Block device ' + dev.mac + '?')){\
+                  updateMac(dev.mac, 'BLOCKED');\
+                }\
+              };\
+              actionTd.appendChild(blockBtn);\
+            }\
+          } else {\
+            actionTd.innerHTML = '<span style=\"color: #8b949e; font-size: 0.9em;\">Protected</span>';\
           }\
           \
           tr.appendChild(actionTd);\
@@ -764,10 +954,14 @@ setTimeout(\"location.href = '/'\",1000);\
     setInterval(fetchLogs, 2000);\
     setInterval(fetchDevices, 3000);\
     setInterval(fetchBlockedDomains, 5000);\
+    setInterval(fetchPortRules, 5000);\
     \
     fetchLogs();\
     fetchDevices();\
     fetchBlockedDomains();\
+    fetchPortRules();\
+    fetchServices();\
+    fetchCustomPorts();\
   </script>\
 </body>\
 </html>"
