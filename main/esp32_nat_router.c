@@ -23,7 +23,8 @@
 #include "esp_vfs_fat.h"
 #include "nvs.h"
 #include "nvs_flash.h"
-
+#include "packet_filter.h"
+#include "service_filter.h"
 #include "freertos/event_groups.h"
 #include "esp_wifi.h"
 #include "esp_eap_client.h"
@@ -44,7 +45,7 @@
 #error "IP_NAPT must be defined"
 #endif
 #include "lwip/lwip_napt.h"
-
+#include "netif_hook.h"
 #include "router_globals.h"
 
 #include "log_buffer.h"
@@ -64,7 +65,7 @@ static EventGroupHandle_t wifi_event_group;
 const int WIFI_CONNECTED_BIT = BIT0;
 
 #define DEFAULT_AP_IP "192.168.4.1"
-#define DEFAULT_DNS "8.8.8.8"
+#define DEFAULT_DNS "192.168.4.1"
 
 /* Global vars */
 uint16_t connect_count = 0;
@@ -88,11 +89,12 @@ esp_netif_t* wifiSTA;
 
 httpd_handle_t start_webserver(void);
 void init_domain_filter(void);
+int get_blocked_domains_count(void);
 
 // ============= MAC FILTERING IMPLEMENTATION =============
 #define MAX_CONNECTED_DEVICES 8
 
-// Global variables (definitions, not declarations)
+
 device_t device_list[MAX_DEVICES];
 int device_count = 0;
 
@@ -119,7 +121,7 @@ static void print_mac(const uint8_t* mac)
     printf("%02X:%02X:%02X:%02X:%02X:%02X",
            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 }
-// ============= END MAC FILTERING IMPLEMENTATION =============
+
 
 static const char *TAG = "ESP32 Firewall";
 
@@ -345,21 +347,17 @@ static void initialize_console(void)
     };
     ESP_ERROR_CHECK( esp_console_init(&console_config) );
 
-    /* Configure linenoise line completion library */
-    /* Enable multiline editing. If not set, long commands will scroll within
-     * single line.
-     */
     linenoiseSetMultiLine(1);
 
-    /* Tell linenoise where to get command completions and hints */
+  
     linenoiseSetCompletionCallback(&esp_console_get_completion);
     linenoiseSetHintsCallback((linenoiseHintsCallback*) &esp_console_get_hint);
 
-    /* Set command history size */
+
     linenoiseHistorySetMaxLen(100);
 
 #if CONFIG_STORE_HISTORY
-    /* Load command history from filesystem */
+ 
     linenoiseHistoryLoad(HISTORY_PATH);
 #endif
 }
@@ -413,9 +411,10 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
         apply_portmap_tab();
         if (esp_netif_get_dns_info(wifiSTA, ESP_NETIF_DNS_MAIN, &dns) == ESP_OK)
         {
-            esp_netif_set_dns_info(wifiAP, ESP_NETIF_DNS_MAIN, &dns);
-            ESP_LOGI(TAG, "set dns to:" IPSTR, IP2STR(&(dns.ip.u_addr.ip4)));
-            add_log_line("DNS set");
+            ip4_addr_t upstream;
+            upstream.addr = dns.ip.u_addr.ip4.addr;
+            ESP_LOGI(TAG, "Upstream DNS learned from STA: " IPSTR, IP2STR(&upstream));
+            add_log_line("Upstream DNS learned. Not applying to AP to preserve filtering.");
         }
         xEventGroupSetBits(wifi_event_group, WIFI_CONNECTED_BIT);
     }
@@ -423,7 +422,7 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
     {
         wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*) event_data;
 
-        // Check if device should be blocked
+ 
         bool should_block = false;
         for(int i = 0; i < device_count; i++) {
             if(memcmp(device_list[i].mac, event->mac, 6) == 0) {
@@ -437,8 +436,7 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
         }
 
         if(should_block) {
-            // Use the event's AID (Association ID) to disconnect
-            // In ESP-IDF 5.1.2, the event structure contains the AID
+           
             esp_err_t err = esp_wifi_deauth_sta(event->aid);
             
             char mac_str[18];
@@ -543,9 +541,6 @@ void wifi_init(const uint8_t* mac, const char* ssid, const char* ent_username, c
     ipInfo_ap.ip.addr = my_ap_ip;
     ipInfo_ap.gw.addr = my_ap_ip;
     esp_netif_set_ip4_addr(&ipInfo_ap.netmask, 255,255,255,0);
-    esp_netif_dhcps_stop(wifiAP); // stop before setting ip WifiAP
-    esp_netif_set_ip_info(wifiAP, &ipInfo_ap);
-    esp_netif_dhcps_start(wifiAP);
 
     esp_event_handler_instance_t instance_any_id;
     esp_event_handler_instance_t instance_got_ip;
@@ -599,12 +594,12 @@ void wifi_init(const uint8_t* mac, const char* ssid, const char* ent_username, c
             add_log_line("STA enterprise connection");
 
             if(strlen(ent_username) != 0 && strlen(ent_identity) != 0) {
-                esp_eap_client_set_identity((uint8_t *)ent_identity, strlen(ent_identity)); //provide identity
+                esp_eap_client_set_identity((uint8_t *)ent_identity, strlen(ent_identity));
             } else {
                 esp_eap_client_set_identity((uint8_t *)ent_username, strlen(ent_username));
             }
-            esp_eap_client_set_username((uint8_t *)ent_username, strlen(ent_username)); //provide username
-            esp_eap_client_set_password((uint8_t *)passwd, strlen(passwd)); //provide password
+            esp_eap_client_set_username((uint8_t *)ent_username, strlen(ent_username));
+            esp_eap_client_set_password((uint8_t *)passwd, strlen(passwd));
             esp_wifi_sta_enterprise_enable();
         }
 
@@ -621,18 +616,30 @@ void wifi_init(const uint8_t* mac, const char* ssid, const char* ent_username, c
         ESP_ERROR_CHECK(esp_wifi_set_mac(ESP_IF_WIFI_AP, ap_mac));
     }
 
+ 
+    esp_netif_dhcps_stop(wifiAP);
+    esp_netif_set_ip_info(wifiAP, &ipInfo_ap);
 
-    // Enable DNS (offer) for dhcp server
+
     dhcps_offer_t dhcps_dns_value = OFFER_DNS;
     esp_netif_dhcps_option(wifiAP,ESP_NETIF_OP_SET, ESP_NETIF_DOMAIN_NAME_SERVER, &dhcps_dns_value, sizeof(dhcps_dns_value));
 
-    // // Set custom dns server address for dhcp server
-    dnsserver.ip.u_addr.ip4.addr = esp_ip4addr_aton(DEFAULT_DNS);
+
+    dnsserver.ip.u_addr.ip4.addr = my_ap_ip; 
     dnsserver.ip.type = ESP_IPADDR_TYPE_V4;
     esp_netif_set_dns_info(wifiAP, ESP_NETIF_DNS_MAIN, &dnsserver);
 
-    // esp_netif_get_dns_info(ESP_IF_WIFI_AP, ESP_NETIF_DNS_MAIN, &dnsinfo);
-    // ESP_LOGI(TAG, "DNS IP:" IPSTR, IP2STR(&dnsinfo.ip.u_addr.ip4));
+    esp_netif_dns_info_t verify_dns;
+    if(esp_netif_get_dns_info(wifiAP, ESP_NETIF_DNS_MAIN, &verify_dns) == ESP_OK) {
+        ESP_LOGI(TAG, "✓ DHCP will provide DNS: " IPSTR, IP2STR(&verify_dns.ip.u_addr.ip4));
+    } else {
+        ESP_LOGE(TAG, "✗ Failed to verify DNS configuration!");
+    }
+    esp_netif_dhcps_start(wifiAP);
+    ip4_addr_t log_ap; log_ap.addr = my_ap_ip;
+
+    ESP_LOGI(TAG, "DNS server set to ESP32 IP for filtering: " IPSTR, IP2STR(&log_ap));
+    add_log_line("DNS filtering enabled");
 
     xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT,
         pdFALSE, pdTRUE, JOIN_TIMEOUT_MS / portTICK_PERIOD_MS);
@@ -725,9 +732,8 @@ void app_main(void)
 
     get_portmap_tab();
 
-    init_domain_filter();
 
-    // Setup WIFI
+    
     wifi_init(mac, ssid, ent_username, ent_identity, passwd, static_ip, subnet_mask, gateway_addr, ap_mac, ap_ssid, ap_passwd, ap_ip);
 
     pthread_t t1;
@@ -735,10 +741,40 @@ void app_main(void)
 
     ip_napt_enable(my_ap_ip, 1);
     ESP_LOGI(TAG, "NAT is enabled");
+    add_log_line("NAT is enabled");
+
+    init_netif_firewall();
+    add_log_line("Netfilter initialized");
+    
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+
+ 
+    ESP_LOGI(TAG, "Initializing domain filter...");
+    init_domain_filter();
+    ESP_LOGI(TAG, "Domain filter initialized with %d blocked domains", get_blocked_domains_count());
+    ESP_LOGI(TAG, "Initializing service filter...");
+    init_service_filter();
+    ESP_LOGI(TAG, "Service filter initialized");
+
+    ESP_LOGI(TAG, "Initializing packet filter...");
+    init_packet_filter();
+    ESP_LOGI(TAG, "Packet filter initialized");
+
+
+
+    ESP_LOGI(TAG, "Starting DNS server for domain filtering...");
+    start_dns_server();
+    
+    
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    
+    ESP_LOGI(TAG, "DNS server startup complete");
+
+    ip_napt_enable(my_ap_ip, 1);
+    ESP_LOGI(TAG, "NAT is enabled");
     add_log_line(TAG,"NAT is enabled");  
 
-    ESP_LOGI(TAG, "Starting DNS server for domain filtering");
-    start_dns_server();
+
 
     char* lock = NULL;
     get_config_param_str("lock", &lock);

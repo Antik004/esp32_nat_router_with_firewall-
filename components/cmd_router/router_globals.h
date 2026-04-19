@@ -6,6 +6,8 @@
 */
 #pragma once
 
+#include <esp_err.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -65,7 +67,7 @@ bool mac_exists(uint8_t mac[6]);
 
 // DNS Server function
 void start_dns_server(void);
-
+void init_packet_filter(void);
 #ifdef __cplusplus
 }
 #endif

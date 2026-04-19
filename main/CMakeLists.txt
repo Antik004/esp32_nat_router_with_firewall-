@@ -3,6 +3,9 @@ idf_component_register(SRCS "esp32_nat_router.c"
                             "log_buffer.c"
                             "domain_filter.c"
                             "dns_server.c"
+                            "packet_filter.c"
+                            "netif_hook.c"
+                            "service_filter.c"
                     INCLUDE_DIRS ".")
 
 set_source_files_properties(http_server.c

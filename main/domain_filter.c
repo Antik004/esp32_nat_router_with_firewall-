@@ -12,14 +12,14 @@ static const char *TAG = "DomainFilter";
 blocked_domain_t blocked_domains[MAX_BLOCKED_DOMAINS];
 int blocked_domain_count = 0;
 
-// Helper function to convert domain to lowercase
+
 static void to_lowercase(char* str) {
     for(int i = 0; str[i]; i++){
         str[i] = tolower((unsigned char)str[i]);
     }
 }
 
-// Check if a domain matches (supports wildcards like *.youtube.com)
+
 static bool domain_matches(const char* query, const char* pattern) {
     // Convert to lowercase for comparison
     char query_lower[MAX_DOMAIN_LENGTH];
@@ -33,21 +33,20 @@ static bool domain_matches(const char* query, const char* pattern) {
     to_lowercase(query_lower);
     to_lowercase(pattern_lower);
     
-    // Exact match
+
     if(strcmp(query_lower, pattern_lower) == 0) {
         return true;
     }
     
-    // Wildcard match (*.example.com)
     if(pattern_lower[0] == '*' && pattern_lower[1] == '.') {
         const char* pattern_suffix = pattern_lower + 2;
         size_t query_len = strlen(query_lower);
         size_t suffix_len = strlen(pattern_suffix);
         
         if(query_len >= suffix_len) {
-            // Check if query ends with pattern suffix
+   
             if(strcmp(query_lower + (query_len - suffix_len), pattern_suffix) == 0) {
-                // Make sure there's a dot before the suffix or it's exact match
+               
                 if(query_len == suffix_len || query_lower[query_len - suffix_len - 1] == '.') {
                     return true;
                 }
@@ -55,7 +54,7 @@ static bool domain_matches(const char* query, const char* pattern) {
         }
     }
     
-    // Check if query is subdomain of pattern
+
     size_t query_len = strlen(query_lower);
     size_t pattern_len = strlen(pattern_lower);
     
@@ -90,7 +89,7 @@ bool add_blocked_domain(const char* domain) {
         return false;
     }
     
-    // Check if already exists
+  
     for(int i = 0; i < blocked_domain_count; i++) {
         if(strcasecmp(blocked_domains[i].domain, domain) == 0) {
             blocked_domains[i].active = true;
@@ -98,7 +97,7 @@ bool add_blocked_domain(const char* domain) {
         }
     }
     
-    // Add new domain
+  
     if(blocked_domain_count < MAX_BLOCKED_DOMAINS) {
         strncpy(blocked_domains[blocked_domain_count].domain, domain, MAX_DOMAIN_LENGTH - 1);
         blocked_domains[blocked_domain_count].domain[MAX_DOMAIN_LENGTH - 1] = '\0';
@@ -109,7 +108,7 @@ bool add_blocked_domain(const char* domain) {
         add_log_line("Blocked domain added:");
         add_log_line(domain);
         
-        // Save to NVS
+    
         nvs_handle_t nvs;
         esp_err_t err = nvs_open(PARAM_NAMESPACE, NVS_READWRITE, &nvs);
         if(err == ESP_OK) {
@@ -141,7 +140,7 @@ bool remove_blocked_domain(const char* domain) {
             add_log_line("Blocked domain removed:");
             add_log_line(domain);
             
-            // Save to NVS
+        
             nvs_handle_t nvs;
             esp_err_t err = nvs_open(PARAM_NAMESPACE, NVS_READWRITE, &nvs);
             if(err == ESP_OK) {
@@ -164,7 +163,7 @@ void init_domain_filter(void) {
     memset(blocked_domains, 0, sizeof(blocked_domains));
     blocked_domain_count = 0;
     
-    // Load from NVS
+
     nvs_handle_t nvs;
     esp_err_t err = nvs_open(PARAM_NAMESPACE, NVS_READONLY, &nvs);
     if(err == ESP_OK) {

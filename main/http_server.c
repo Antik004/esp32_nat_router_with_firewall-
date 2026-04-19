@@ -29,7 +29,8 @@
 #include "log_buffer.h"
 #include "domain_filter.h"
 
-
+#include "packet_filter.h"
+#include "service_filter.h"
 static const char *TAG = "HTTPServer";
 
 ////////////////////////////////////////////////////////
@@ -128,6 +129,101 @@ static esp_err_t index_get_handler(httpd_req_t *req)
 
     const char* resp_str = (const char*) req->user_ctx;
     httpd_resp_send(req, resp_str, strlen(resp_str));
+    return ESP_OK;
+}
+
+esp_err_t get_port_rules_handler(httpd_req_t *req)
+{
+    cJSON *root = cJSON_CreateObject();
+
+    // Map service filter → UI
+    cJSON_AddBoolToObject(root, "tcp_80",  !g_services[SVC_HTTP].blocked);
+    cJSON_AddBoolToObject(root, "tcp_443", !g_services[SVC_HTTPS].blocked);
+    cJSON_AddBoolToObject(root, "udp_53",  !g_services[SVC_DNS].blocked);
+    cJSON_AddBoolToObject(root, "tcp_22",  !g_services[SVC_SSH].blocked);
+    cJSON_AddBoolToObject(root, "tcp_21",  !g_services[SVC_FTP].blocked);
+    cJSON_AddBoolToObject(root, "tcp_25",  !g_services[SVC_SMTP].blocked);
+    cJSON_AddBoolToObject(root, "tcp_110", !g_services[SVC_POP3].blocked);
+    cJSON_AddBoolToObject(root, "tcp_143", !g_services[SVC_IMAP].blocked);
+    cJSON_AddBoolToObject(root, "tcp_3389",!g_services[SVC_RDP].blocked);
+    cJSON_AddBoolToObject(root, "udp_123", !g_services[SVC_NTP].blocked);
+
+    char *resp = cJSON_Print(root);
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_send(req, resp, strlen(resp));
+
+    free(resp);
+    cJSON_Delete(root);
+    return ESP_OK;
+}
+
+// Update port rule
+
+esp_err_t update_port_rule_handler(httpd_req_t *req)
+{
+    char buf[256];
+    int ret = httpd_req_recv(req, buf, sizeof(buf));
+    if(ret <= 0) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid request");
+        return ESP_FAIL;
+    }
+    buf[ret] = 0;
+
+    cJSON *json = cJSON_Parse(buf);
+    if(!json) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid JSON");
+        return ESP_FAIL;
+    }
+
+    cJSON *port_item = cJSON_GetObjectItem(json, "port");
+    cJSON *enabled_item = cJSON_GetObjectItem(json, "enabled");
+
+    if(!port_item || !enabled_item) {
+        cJSON_Delete(json);
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Missing parameters");
+        return ESP_FAIL;
+    }
+
+    const char *port_name = port_item->valuestring;
+    bool enabled = cJSON_IsTrue(enabled_item);
+
+    // 🔥 Map OLD UI → NEW SERVICE FILTER
+    if(strcmp(port_name, "tcp_80") == 0)
+        service_set_blocked(SVC_HTTP, !enabled);
+
+    else if(strcmp(port_name, "tcp_443") == 0)
+        service_set_blocked(SVC_HTTPS, !enabled);
+
+    else if(strcmp(port_name, "udp_53") == 0)
+        service_set_blocked(SVC_DNS, !enabled);
+
+    else if(strcmp(port_name, "tcp_22") == 0)
+        service_set_blocked(SVC_SSH, !enabled);
+
+    else if(strcmp(port_name, "tcp_21") == 0)
+        service_set_blocked(SVC_FTP, !enabled);
+
+    else if(strcmp(port_name, "tcp_25") == 0)
+        service_set_blocked(SVC_SMTP, !enabled);
+
+    else if(strcmp(port_name, "tcp_110") == 0)
+        service_set_blocked(SVC_POP3, !enabled);
+
+    else if(strcmp(port_name, "tcp_143") == 0)
+        service_set_blocked(SVC_IMAP, !enabled);
+
+    else if(strcmp(port_name, "tcp_3389") == 0)
+        service_set_blocked(SVC_RDP, !enabled);
+
+    else if(strcmp(port_name, "udp_123") == 0)
+        service_set_blocked(SVC_NTP, !enabled);
+
+    else {
+        ESP_LOGW("HTTPServer", "Unknown port rule: %s", port_name);
+    }
+
+    cJSON_Delete(json);
+    httpd_resp_sendstr(req, "OK");
     return ESP_OK;
 }
 
@@ -319,11 +415,37 @@ esp_err_t remove_blocked_domain_handler(httpd_req_t *req)
     cJSON_Delete(json);
     return ESP_OK;
 }
-// ============================================================================
-// For http_server.c - update_mac_handler function
-// ============================================================================
 
-// Replace the update_mac_handler function with this version:
+// Handler to remove a blocked domain via URL query ?domain=example.com
+esp_err_t remove_blocked_domain_query_handler(httpd_req_t *req)
+{
+    char buf[256];
+    size_t qlen = httpd_req_get_url_query_len(req) + 1;
+    if (qlen <= 1) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Missing query");
+        return ESP_FAIL;
+    }
+    if (qlen > sizeof(buf)) qlen = sizeof(buf);
+    if (httpd_req_get_url_query_str(req, buf, qlen) != ESP_OK) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid query");
+        return ESP_FAIL;
+    }
+
+    char domain[128];
+    if (httpd_query_key_value(buf, "domain", domain, sizeof(domain)) != ESP_OK) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Missing domain parameter");
+        return ESP_FAIL;
+    }
+
+    if (remove_blocked_domain(domain)) {
+        httpd_resp_sendstr(req, "OK");
+    } else {
+        httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "Domain not found");
+    }
+    return ESP_OK;
+}
+
+//////////mac handler///////////////
 
 esp_err_t update_mac_handler(httpd_req_t *req)
 {
@@ -372,8 +494,7 @@ esp_err_t update_mac_handler(httpd_req_t *req)
                 add_log_line("MAC blocked:");
                 add_log_line(mac_str);
                 
-                // Kick device if currently connected
-                // In ESP-IDF 5.1.2, we need to find the device and use its AID
+
                 wifi_sta_list_t wifi_sta_list;
                 memset(&wifi_sta_list, 0, sizeof(wifi_sta_list));
                 
@@ -382,13 +503,9 @@ esp_err_t update_mac_handler(httpd_req_t *req)
                     // Look for the device in connected stations
                     for(int j = 0; j < wifi_sta_list.num; j++) {
                         if(memcmp(wifi_sta_list.sta[j].mac, device_list[i].mac, 6) == 0) {
-                            // Disconnect all stations and they'll reconnect
-                            // Blocked device will be rejected on reconnect
-                            // This is a workaround since we can't get AID from sta list
+
                             ESP_LOGI(TAG, "Device will be blocked on next connection attempt");
-                            
-                            // Alternative: Use disconnect by setting max_connection to current-1
-                            // This forces a re-evaluation of connections
+
                             break;
                         }
                     }
@@ -422,6 +539,191 @@ static void get_client_ip(httpd_req_t *req, char *ip_str, size_t len) {
         }
     }
 }
+// ==========================================================================
+//  SERVICE FILTER  –  REST handlers
+//
+//  GET  /services          → JSON array of all built-in service rules
+//  POST /services/set      → { "name": "SSH",  "blocked": true }
+//  GET  /custom_ports      → JSON array of custom port rules
+//  POST /custom_ports/add  → { "name": "MyApp", "port": 8080, "proto": "tcp", "blocked": true }
+//  POST /custom_ports/remove → { "port": 8080, "proto": "tcp" }
+// ==========================================================================
+
+// GET /services
+esp_err_t get_services_handler(httpd_req_t *req) {
+    cJSON *arr = cJSON_CreateArray();
+    for (int i = 0; i < SVC_BUILTIN_COUNT; i++) {
+        cJSON *obj = cJSON_CreateObject();
+        cJSON_AddStringToObject(obj, "name",    g_services[i].name);
+        cJSON_AddNumberToObject(obj, "port",    g_services[i].port);
+        cJSON_AddStringToObject(obj, "proto",
+            g_services[i].proto == SVC_PROTO_TCP  ? "tcp"  :
+            g_services[i].proto == SVC_PROTO_UDP  ? "udp"  : "both");
+        cJSON_AddBoolToObject(obj,   "blocked", g_services[i].blocked);
+        cJSON_AddItemToArray(arr, obj);
+    }
+    char *resp = cJSON_Print(arr);
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_send(req, resp, strlen(resp));
+    free(resp);
+    cJSON_Delete(arr);
+    return ESP_OK;
+}
+
+// POST /services/set   body: {"name":"SSH","blocked":true}
+esp_err_t set_service_handler(httpd_req_t *req) {
+    char buf[128];
+    int ret = httpd_req_recv(req, buf, sizeof(buf) - 1);
+    if (ret <= 0) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "No body");
+        return ESP_FAIL;
+    }
+    buf[ret] = '\0';
+
+    cJSON *json = cJSON_Parse(buf);
+    if (!json) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid JSON");
+        return ESP_FAIL;
+    }
+
+    cJSON *name_item    = cJSON_GetObjectItem(json, "name");
+    cJSON *blocked_item = cJSON_GetObjectItem(json, "blocked");
+    if (!name_item || !blocked_item) {
+        cJSON_Delete(json);
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Missing name or blocked");
+        return ESP_FAIL;
+    }
+
+    service_id_t id = service_find_by_name(name_item->valuestring);
+    if (id == SVC_BUILTIN_COUNT) {
+        cJSON_Delete(json);
+        httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "Unknown service name");
+        return ESP_FAIL;
+    }
+
+    bool blocked = cJSON_IsTrue(blocked_item);
+    service_set_blocked(id, blocked);
+
+    cJSON_Delete(json);
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_sendstr(req, "OK");
+    return ESP_OK;
+}
+
+// GET /custom_ports
+esp_err_t get_custom_ports_handler(httpd_req_t *req) {
+    cJSON *arr = cJSON_CreateArray();
+    for (int i = 0; i < MAX_CUSTOM_PORT_RULES; i++) {
+        if (!g_custom_rules[i].active) continue;
+        cJSON *obj = cJSON_CreateObject();
+        cJSON_AddStringToObject(obj, "name",    g_custom_rules[i].name);
+        cJSON_AddNumberToObject(obj, "port",    g_custom_rules[i].port);
+        cJSON_AddStringToObject(obj, "proto",
+            g_custom_rules[i].proto == SVC_PROTO_TCP  ? "tcp"  :
+            g_custom_rules[i].proto == SVC_PROTO_UDP  ? "udp"  : "both");
+        cJSON_AddBoolToObject(obj,   "blocked", g_custom_rules[i].blocked);
+        cJSON_AddItemToArray(arr, obj);
+    }
+    char *resp = cJSON_Print(arr);
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_send(req, resp, strlen(resp));
+    free(resp);
+    cJSON_Delete(arr);
+    return ESP_OK;
+}
+
+// POST /custom_ports/add   body: {"name":"MyApp","port":8080,"proto":"tcp","blocked":true}
+esp_err_t add_custom_port_handler(httpd_req_t *req) {
+    char buf[192];
+    int ret = httpd_req_recv(req, buf, sizeof(buf) - 1);
+    if (ret <= 0) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "No body");
+        return ESP_FAIL;
+    }
+    buf[ret] = '\0';
+
+    cJSON *json = cJSON_Parse(buf);
+    if (!json) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid JSON");
+        return ESP_FAIL;
+    }
+
+    cJSON *j_name    = cJSON_GetObjectItem(json, "name");
+    cJSON *j_port    = cJSON_GetObjectItem(json, "port");
+    cJSON *j_proto   = cJSON_GetObjectItem(json, "proto");
+    cJSON *j_blocked = cJSON_GetObjectItem(json, "blocked");
+
+    if (!j_name || !j_port || !j_proto || !j_blocked) {
+        cJSON_Delete(json);
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Missing fields");
+        return ESP_FAIL;
+    }
+
+    uint16_t port   = (uint16_t)j_port->valuedouble;
+    bool     blocked = cJSON_IsTrue(j_blocked);
+    uint8_t  proto;
+    const char *proto_str = j_proto->valuestring;
+    if      (strcasecmp(proto_str, "tcp")  == 0) proto = SVC_PROTO_TCP;
+    else if (strcasecmp(proto_str, "udp")  == 0) proto = SVC_PROTO_UDP;
+    else                                          proto = SVC_PROTO_BOTH;
+
+    bool ok = service_add_custom(j_name->valuestring, port, proto, blocked);
+    cJSON_Delete(json);
+
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    if (ok) {
+        httpd_resp_sendstr(req, "OK");
+    } else {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Table full");
+    }
+    return ok ? ESP_OK : ESP_FAIL;
+}
+
+// POST /custom_ports/remove   body: {"port":8080,"proto":"tcp"}
+esp_err_t remove_custom_port_handler(httpd_req_t *req) {
+    char buf[128];
+    int ret = httpd_req_recv(req, buf, sizeof(buf) - 1);
+    if (ret <= 0) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "No body");
+        return ESP_FAIL;
+    }
+    buf[ret] = '\0';
+
+    cJSON *json = cJSON_Parse(buf);
+    if (!json) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid JSON");
+        return ESP_FAIL;
+    }
+
+    cJSON *j_port  = cJSON_GetObjectItem(json, "port");
+    cJSON *j_proto = cJSON_GetObjectItem(json, "proto");
+    if (!j_port || !j_proto) {
+        cJSON_Delete(json);
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Missing port or proto");
+        return ESP_FAIL;
+    }
+
+    uint16_t port = (uint16_t)j_port->valuedouble;
+    uint8_t  proto;
+    const char *proto_str = j_proto->valuestring;
+    if      (strcasecmp(proto_str, "tcp")  == 0) proto = SVC_PROTO_TCP;
+    else if (strcasecmp(proto_str, "udp")  == 0) proto = SVC_PROTO_UDP;
+    else                                          proto = SVC_PROTO_BOTH;
+
+    bool ok = service_remove_custom(port, proto);
+    cJSON_Delete(json);
+
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    if (ok) {
+        httpd_resp_sendstr(req, "OK");
+    } else {
+        httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "Rule not found");
+    }
+    return ok ? ESP_OK : ESP_FAIL;
+}
+
 esp_err_t http_404_error_handler(httpd_req_t *req, httpd_err_code_t err)
 {
     httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "Page not found");
@@ -458,6 +760,9 @@ httpd_handle_t start_webserver(void)
 {
     httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+
+    config.max_uri_handlers = 24;  
+    config.stack_size = 8192;  
 
     const char* config_page_template = CONFIG_PAGE;
 
@@ -517,7 +822,22 @@ httpd_handle_t start_webserver(void)
             .user_ctx = NULL
         };
         httpd_register_uri_handler(server, &update_mac_uri);
+        
+        httpd_uri_t get_port_rules_uri = {
+        .uri = "/port_rules",
+        .method = HTTP_GET,
+        .handler = get_port_rules_handler,
+        .user_ctx = NULL
+        };
+        httpd_register_uri_handler(server, &get_port_rules_uri);
 
+        httpd_uri_t update_port_rule_uri = {
+        .uri = "/update_port_rule",
+        .method = HTTP_POST,
+        .handler = update_port_rule_handler,
+        .user_ctx = NULL
+        };
+        httpd_register_uri_handler(server, &update_port_rule_uri);
 
         ///////
 
@@ -526,7 +846,7 @@ httpd_handle_t start_webserver(void)
         .method = HTTP_GET,
         .handler = get_blocked_domains_handler,
         .user_ctx = NULL
-};
+        };
         httpd_register_uri_handler(server, &get_blocked_domains_uri);
 
         httpd_uri_t add_blocked_domain_uri = {
@@ -534,16 +854,67 @@ httpd_handle_t start_webserver(void)
         .method = HTTP_POST,
         .handler = add_blocked_domain_handler,
         .user_ctx = NULL
-};
-    httpd_register_uri_handler(server, &add_blocked_domain_uri);
+        };
+        httpd_register_uri_handler(server, &add_blocked_domain_uri);
 
-httpd_uri_t remove_blocked_domain_uri = {
-        .uri = "/remove_domain",
-        .method = HTTP_POST,
-        .handler = remove_blocked_domain_handler,
-        .user_ctx = NULL
-};
-httpd_register_uri_handler(server, &remove_blocked_domain_uri);
+        // POST expects JSON body {"domain":"example.com"}
+        httpd_uri_t remove_blocked_domain_uri = {
+            .uri = "/remove_domain",
+            .method = HTTP_POST,
+            .handler = remove_blocked_domain_handler,
+            .user_ctx = NULL
+        };
+        httpd_register_uri_handler(server, &remove_blocked_domain_uri);
+
+        // Also accept removal via GET query: /remove_domain?domain=example.com
+        httpd_uri_t remove_blocked_domain_get_uri = {
+            .uri = "/remove_domain",
+            .method = HTTP_GET,
+            .handler = remove_blocked_domain_query_handler,
+            .user_ctx = NULL
+        };
+        httpd_register_uri_handler(server, &remove_blocked_domain_get_uri);
+
+        // ---- Service filter endpoints ----
+        httpd_uri_t get_services_uri = {
+            .uri     = "/services",
+            .method  = HTTP_GET,
+            .handler = get_services_handler,
+            .user_ctx = NULL
+        };
+        httpd_register_uri_handler(server, &get_services_uri);
+
+        httpd_uri_t set_service_uri = {
+            .uri     = "/services/set",
+            .method  = HTTP_POST,
+            .handler = set_service_handler,
+            .user_ctx = NULL
+        };
+        httpd_register_uri_handler(server, &set_service_uri);
+
+        httpd_uri_t get_custom_ports_uri = {
+            .uri     = "/custom_ports",
+            .method  = HTTP_GET,
+            .handler = get_custom_ports_handler,
+            .user_ctx = NULL
+        };
+        httpd_register_uri_handler(server, &get_custom_ports_uri);
+
+        httpd_uri_t add_custom_port_uri = {
+            .uri     = "/custom_ports/add",
+            .method  = HTTP_POST,
+            .handler = add_custom_port_handler,
+            .user_ctx = NULL
+        };
+        httpd_register_uri_handler(server, &add_custom_port_uri);
+
+        httpd_uri_t remove_custom_port_uri = {
+            .uri     = "/custom_ports/remove",
+            .method  = HTTP_POST,
+            .handler = remove_custom_port_handler,
+            .user_ctx = NULL
+        };
+        httpd_register_uri_handler(server, &remove_custom_port_uri);
 
         return server;
     }
