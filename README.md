@@ -6,7 +6,7 @@ Matches against blocked domain list
 Returns 0.0.0.0 for blocked domains
 Supports wildcard patterns (e.g., *.youtube.com)
  //ignore commit messages, domain blocking has already been implemented
-
+Port Filtering has been implemented to support tcp and udp service blocking
 
 
 Note:-The current version of the orignal code is also available with a firewall now, this version of ours has an extra functionality of domain filtering
