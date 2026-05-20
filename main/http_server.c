@@ -187,7 +187,7 @@ esp_err_t update_port_rule_handler(httpd_req_t *req)
     const char *port_name = port_item->valuestring;
     bool enabled = cJSON_IsTrue(enabled_item);
 
-    // 🔥 Map OLD UI → NEW SERVICE FILTER
+    
     if(strcmp(port_name, "tcp_80") == 0)
         service_set_blocked(SVC_HTTP, !enabled);
 
