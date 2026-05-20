@@ -14,7 +14,7 @@ static const char *TAG = "NETIF_HOOK";
 
 static netif_input_fn original_ap_input = NULL;
 
-// 🔥 Packet interception (Martin-style)
+
 static err_t ap_netif_input_hook(struct pbuf *p, struct netif *inp)
 {
     if (!p || p->len < 34) {
@@ -51,7 +51,6 @@ static err_t ap_netif_input_hook(struct pbuf *p, struct netif *inp)
 
     ESP_LOGI(TAG, "proto=%d port=%d", proto, dst_port);
 
-    // 🔥 Your firewall logic
     if (!is_packet_allowed(src_mac, proto, src_port, dst_port)) {
         ESP_LOGW(TAG, "BLOCKED port=%d", dst_port);
         pbuf_free(p);
@@ -61,7 +60,7 @@ static err_t ap_netif_input_hook(struct pbuf *p, struct netif *inp)
     return original_ap_input(p, inp);
 }
 
-// 🔥 THIS is the esp_netif part you asked for
+
 void init_netif_firewall(void)
 {
     // Get AP interface
