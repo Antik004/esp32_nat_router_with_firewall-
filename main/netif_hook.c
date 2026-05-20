@@ -79,7 +79,7 @@ void init_netif_firewall(void)
         return;
     }
 
-    // Hook it (THIS IS THE MAGIC LINE)
+    //magic line lol 
     original_ap_input = ap_netif->input;
     ap_netif->input = ap_netif_input_hook;
 
